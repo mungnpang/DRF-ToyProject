@@ -1,5 +1,3 @@
-from django.http import HttpRequest
-from django.shortcuts import render
 from rest_framework import permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,11 +12,20 @@ from product.models import PurchasedList as PurchasedListModel
 from user.models import User as UserModel
 
 # Create your views here.
-class ProductUploadPermission(permissions.BasePermission):
+class ProductPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         user = request.user
-        result = bool(user.user_type == '판매회원' and user.is_active)
-        return result
+        if request.method == 'GET':
+            return user.is_authenticated
+        
+        if request.method == 'POST':
+            return bool(user.user_type == '판매회원' and user.is_active)
+        
+    def has_object_permission(self, request, view, product):
+        user = request.user
+        if product.seller_id == user.id:
+            return True
+        return False
     
     
 class ReviewPermission(permissions.BasePermission):
@@ -59,9 +66,10 @@ class PurchasedPermission(permissions.BasePermission):
 
 
 class ProductApiView(APIView):
-    permission_classes = [ProductUploadPermission]
+    permission_classes = [ProductPermission]
     def get(self, request):
-        products = ProductModel.objects.all()
+        print(request.method)
+        products = ProductModel.objects.all().order_by('?')
         return Response(ProductSerializer(products, many=True).data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -73,6 +81,7 @@ class ProductApiView(APIView):
 
     def put(self, request, obj_id):
         product = ProductModel.objects.get(id=obj_id)
+        self.check_object_permissions(self.request, product)
         product_serializer = ProductSerializer(product, data=request.data, partial=True)
 
         if product_serializer.is_valid():
