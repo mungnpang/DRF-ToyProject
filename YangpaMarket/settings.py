@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'product',
     'render',
     'rest_framework',
+    'user_action',
 ]
 
 MIDDLEWARE = [
