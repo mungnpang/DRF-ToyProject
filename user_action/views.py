@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -8,13 +8,12 @@ from user_action.models import Review as ReviewModel
 from user_action.models import Cart as CartModel
 from user_action.models import PurchasedList as PurchasedListModel
 
-from user_action.permissions import ReviewPermission, CartPermission, PurchasedPermission
 
 # Create your views here.
 class ReviewApiView(APIView):
-    permission_classes = [ReviewPermission]
+    permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
-        reviews = ReviewModel.objects.filter(product_id=request.data['product_id'])
+        reviews = ReviewModel.objects.filter(product_id=request.GET['product_id'])
         return Response(ReviewSerializer(reviews, many=True).data, status=status.HTTP_200_OK)
     
     def post(self, request):
@@ -27,8 +26,11 @@ class ReviewApiView(APIView):
         return Response(review_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
-        review = ReviewModel.objects.get(id=request.data['review_id'])
-        self.check_object_permissions(self.request, review)
+        try:
+            review = ReviewModel.objects.get(id=request.data['review_id'], author=request.user)
+        except:
+            return Response({"message":"존재하지 않는 리뷰이거나 접근 권한이 없습니다"}, status=status.HTTP_400_BAD_REQUEST)
+        
         review_serializer = ReviewSerializer(review, data=request.data, partial=True)
         
         if review_serializer.is_valid():
@@ -45,7 +47,7 @@ class ReviewApiView(APIView):
 
 
 class CartApiView(APIView):
-    permission_classes = [CartPermission]
+    permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
         carts = CartModel.objects.filter(user_id=request.user.id)
         return Response(CartSerializer(carts, many=True).data, status=status.HTTP_200_OK)
@@ -59,10 +61,12 @@ class CartApiView(APIView):
         return Response(cart_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request):
-        cart = CartModel.objects.get(id=request.data['cart_id'])
-        self.check_object_permissions(self.request, cart)
-        cart_serializer = CartSerializer(cart, data=request.data, partial=True)
+        try:
+            cart = CartModel.objects.get(id=request.data['cart_id'], user=request.user)
+        except:
+            return Response({"message": "접근 권한이 없거나 잘못된 요청입니다"}, status=status.HTTP_400_BAD_REQUEST)
         
+        cart_serializer = CartSerializer(cart, data=request.data, partial=True)
         if cart_serializer.is_valid():
             cart_serializer.save()
             return Response({"message":"성공적으로 장바구니 상품을 수정했습니다"}, status=status.HTTP_200_OK)
@@ -71,7 +75,7 @@ class CartApiView(APIView):
     
     
 class PurchasedListApiView(APIView):
-    permission_classes = [PurchasedPermission]
+    permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
         purchased = PurchasedListModel.objects.filter(user_id=request.user.id)
         return Response(PurchasedListSerializer(purchased, many=True).data, status=status.HTTP_200_OK)
@@ -85,8 +89,11 @@ class PurchasedListApiView(APIView):
         return Response(purchased_list_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request):
-        purchased = PurchasedListModel.objects.get(id=request.data['purchased_id'])
-        self.check_object_permissions(self.request, purchased)
+        try:
+            purchased = PurchasedListModel.objects.get(id=request.data['purchased_id'], user=request.user)
+        except:
+            return Response({"message": "접근권한이 없거나 잘못된 요청입니다"}, status=status.HTTP_400_BAD_REQUEST)
+        
         purchased_list_serializer = PurchasedListSerializer(purchased, data=request.data, partial=True)
         
         if purchased_list_serializer.is_valid():

@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -6,13 +6,12 @@ from product.serializers import ProductSerializer, ProductManagementSerializer
 from product.models import Product as ProductModel
 from product.permissions import ProductPermission
 
-from user.permissions import AdminOnly
 
 # Create your views here.
 class ProductApiView(APIView):
     permission_classes = [ProductPermission]
     def get(self, request):
-        products = ProductModel.objects.filter(seller=request.user.id)
+        products = ProductModel.objects.filter(seller=request.user)
         return Response(ProductSerializer(products, many=True).data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -23,8 +22,10 @@ class ProductApiView(APIView):
         return Response(product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
-        product = ProductModel.objects.get(id=request.data['product_id'])
-        self.check_object_permissions(self.request, product)
+        try:
+            product = ProductModel.objects.get(id=request.data['product_id'], seller=request.user)
+        except:
+            return Response({"message":"없는 상품정보이거나 접근 권한이 없습니다"})
         product_serializer = ProductSerializer(product, data=request.data, partial=True)
         if product_serializer.is_valid():
             product_serializer.save()
@@ -34,7 +35,7 @@ class ProductApiView(APIView):
 
 
 class ProductManagementApiView(APIView):
-    permission_classes = [AdminOnly]
+    permission_classes = [permissions.IsAdminUser]
     def get(self, request):
         products = ProductModel.objects.all()
         return Response(ProductManagementSerializer(products, many=True).data, status=status.HTTP_200_OK)

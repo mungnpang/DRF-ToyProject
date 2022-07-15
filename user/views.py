@@ -1,12 +1,11 @@
 from django.contrib.auth import authenticate, login, logout
 
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from user.models import User as UserModel
 from user.serializers import UserSerializer, UserManagementSerializer
-from user.permissions import AdminOnly
 
 
 class UserApiView(APIView):
@@ -57,7 +56,7 @@ class UserLogoutApiView(APIView):
     
     
 class UserManagementApiView(APIView):
-    permission_classes = [AdminOnly]
+    permission_classes = [permissions.IsAdminUser]
     def get(self, request):
         user = UserModel.objects.all()
         return Response(UserSerializer(user, many=True).data, status=status.HTTP_200_OK)
