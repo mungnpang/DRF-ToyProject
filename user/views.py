@@ -11,12 +11,10 @@ from user.permissions import AdminOnly
 
 class UserApiView(APIView):
     def get(self, request):
-        user = request.user
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
     
     def put(self, request):
-        user = request.user
-        user_serializer = UserSerializer(user, data=request.data, partial=True)
+        user_serializer = UserSerializer(request.user, data=request.data, partial=True)
         
         if user_serializer.is_valid():
             user_serializer.save()
@@ -65,8 +63,7 @@ class UserManagementApiView(APIView):
         return Response(UserSerializer(user, many=True).data, status=status.HTTP_200_OK)
     
     def put(self, request):
-        user_id = request.data['user_id']
-        user = UserModel.objects.get(id=user_id)
+        user = UserModel.objects.get(id=request.data['user_id'])
         user_management_serializer = UserManagementSerializer(user, data=request.data, partial=True)
         if user_management_serializer.is_valid():
             user_management_serializer.save()

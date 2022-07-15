@@ -12,8 +12,7 @@ from user.permissions import AdminOnly
 class ProductApiView(APIView):
     permission_classes = [ProductPermission]
     def get(self, request):
-        user = request.user
-        products = ProductModel.objects.filter(seller=user.id)
+        products = ProductModel.objects.filter(seller=request.user.id)
         return Response(ProductSerializer(products, many=True).data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -41,9 +40,8 @@ class ProductManagementApiView(APIView):
         return Response(ProductManagementSerializer(products, many=True).data, status=status.HTTP_200_OK)
     
     def put(self, request):
-        data = request.data
-        product = ProductModel.objects.get(id=data['product_id'])
-        product_management_serializer = ProductManagementSerializer(product, data=data, partial=True)
+        product = ProductModel.objects.get(id=request.data['product_id'])
+        product_management_serializer = ProductManagementSerializer(product, data=request.data, partial=True)
         if product_management_serializer.is_valid():
             product_management_serializer.save()
             return Response({"message": "성공적으로 제품 정보를 수정하였습니다"}, status=status.HTTP_200_OK)

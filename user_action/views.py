@@ -4,7 +4,6 @@ from rest_framework.views import APIView
 
 from user_action.serializers import ReviewSerializer, CartSerializer, PurchasedListSerializer
 
-from product.models import Product as ProductModel
 from user_action.models import Review as ReviewModel
 from user_action.models import Cart as CartModel
 from user_action.models import PurchasedList as PurchasedListModel
@@ -15,8 +14,7 @@ from user_action.permissions import ReviewPermission, CartPermission, PurchasedP
 class ReviewApiView(APIView):
     permission_classes = [ReviewPermission]
     def get(self, request):
-        data = request.data
-        reviews = ReviewModel.objects.filter(product_id=data['product_id'])
+        reviews = ReviewModel.objects.filter(product_id=request.data['product_id'])
         return Response(ReviewSerializer(reviews, many=True).data, status=status.HTTP_200_OK)
     
     def post(self, request):
@@ -29,8 +27,7 @@ class ReviewApiView(APIView):
         return Response(review_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
-        data = request.data
-        review = ReviewModel.objects.get(id=data['review_id'])
+        review = ReviewModel.objects.get(id=request.data['review_id'])
         self.check_object_permissions(self.request, review)
         review_serializer = ReviewSerializer(review, data=request.data, partial=True)
         
@@ -41,7 +38,6 @@ class ReviewApiView(APIView):
         return Response(review_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
-        data = request.data
         review = ReviewModel.objects.get(id=request.data['review_id'])
         self.check_object_permissions(self.request, review)
         review.delete()
@@ -51,8 +47,7 @@ class ReviewApiView(APIView):
 class CartApiView(APIView):
     permission_classes = [CartPermission]
     def get(self, request):
-        user = request.user
-        carts = CartModel.objects.filter(user_id=user.id)
+        carts = CartModel.objects.filter(user_id=request.user.id)
         return Response(CartSerializer(carts, many=True).data, status=status.HTTP_200_OK)
         
     def post(self, request):
@@ -64,8 +59,7 @@ class CartApiView(APIView):
         return Response(cart_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request):
-        data = request.data
-        cart = CartModel.objects.get(id=data['cart_id'])
+        cart = CartModel.objects.get(id=request.data['cart_id'])
         self.check_object_permissions(self.request, cart)
         cart_serializer = CartSerializer(cart, data=request.data, partial=True)
         
@@ -79,8 +73,7 @@ class CartApiView(APIView):
 class PurchasedListApiView(APIView):
     permission_classes = [PurchasedPermission]
     def get(self, request):
-        user = request.user
-        purchased = PurchasedListModel.objects.filter(user_id=user.id)
+        purchased = PurchasedListModel.objects.filter(user_id=request.user.id)
         return Response(PurchasedListSerializer(purchased, many=True).data, status=status.HTTP_200_OK)
     
     def post(self, request):
@@ -101,3 +94,4 @@ class PurchasedListApiView(APIView):
             return Response({"message": "성공적으로 구매 상품정보를 수정했습니다"}, status=status.HTTP_200_OK)
 
         return Response(purchased_list_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
