@@ -22,10 +22,8 @@ class ProductApiView(APIView):
         return Response(product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
-        try:
-            product = ProductModel.objects.get(id=request.data['product_id'], seller=request.user)
-        except:
-            return Response({"message":"없는 상품정보이거나 접근 권한이 없습니다"})
+        product = ProductModel.objects.get(id=request.data['product_id'])
+        self.check_object_permissions(self.request, product)
         product_serializer = ProductSerializer(product, data=request.data, partial=True)
         if product_serializer.is_valid():
             product_serializer.save()

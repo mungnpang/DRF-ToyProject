@@ -6,3 +6,8 @@ class ProductPermission(permissions.BasePermission):
         if request.method == 'POST':
             return bool(user.user_type == '판매회원' and user.is_active)
         return user.is_authenticated
+    
+    def has_object_permission(self, request, view, product):
+        if product.seller_id == request.user.id:
+            return True
+        return False
